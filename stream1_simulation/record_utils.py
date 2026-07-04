@@ -84,3 +84,36 @@ def plot_reward_curve(rewards, run_id, drop_step=None, success_step=None, out_pa
     fig.savefig(out_path, facecolor=COLOR_SURFACE)
     plt.close(fig)
     return out_path
+
+
+def plot_bug_rate_curve(checkpoint_steps, bug_rates, n_seeds, n_episodes_per_checkpoint, out_path=None):
+    """Save a bug-reproduction-rate-vs-checkpoint-step PNG, aggregated across
+    many seeds/episodes (see analyze_trials.py), styled to match
+    plot_reward_curve's dataviz-skill convention."""
+    fig, ax = plt.subplots(figsize=(7.5, 4.2), dpi=150)
+    fig.patch.set_facecolor(COLOR_SURFACE)
+    ax.set_facecolor(COLOR_SURFACE)
+
+    ax.plot(checkpoint_steps, bug_rates, color=COLOR_CRITICAL, linewidth=2, marker="o", markersize=4)
+
+    ax.set_ylim(-0.05, 1.05)
+    ax.grid(True, color=COLOR_GRID, linewidth=1, axis="y")
+    ax.set_axisbelow(True)
+    for spine in ("top", "right"):
+        ax.spines[spine].set_visible(False)
+    for spine in ("left", "bottom"):
+        ax.spines[spine].set_color(COLOR_AXIS)
+
+    ax.tick_params(colors=COLOR_MUTED, labelsize=9)
+    ax.set_xlabel("checkpoint step", color=COLOR_MUTED, fontsize=10)
+    ax.set_ylabel("bug reproduction rate", color=COLOR_MUTED, fontsize=10)
+    ax.set_title(
+        f"Bug reproduction rate — {n_seeds} seeds, "
+        f"{n_episodes_per_checkpoint} rollouts/checkpoint",
+        color=COLOR_INK, fontsize=12, loc="left",
+    )
+
+    fig.tight_layout()
+    fig.savefig(out_path, facecolor=COLOR_SURFACE)
+    plt.close(fig)
+    return out_path

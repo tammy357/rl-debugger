@@ -60,7 +60,7 @@ def check_run(run_id):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--run_id", type=int, required=True, choices=[1, 2, 3])
+    parser.add_argument("--run_id", type=int, required=True)
     args = parser.parse_args()
     check_run(args.run_id)
 

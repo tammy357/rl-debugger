@@ -49,14 +49,46 @@ python rollout.py --run_id 1 --checkpoint checkpoints/run1/model_80000_steps.zip
 python check_gemma_contract.py --run_id 1                   # validates output shape
 ```
 
-`train.py` saves checkpoints every 10k steps. **Pick the demo checkpoint
-manually**: PPO on this task tends to first learn to push aggressively
-(overshooting and dropping the object — the bug, ~steps 60k-80k) before later
-self-correcting into a clean, careful "success" behavior. Scan a run's
-checkpoints and eyeball which one best demonstrates the bug; that's the one to
-roll out for the demo. (Whether/when self-correction happens varies by seed —
-run2's policy never fully self-corrected within 100k steps and reproduces the
-bug at every checkpoint from 60k on; run1 and run3 self-correct by ~80k-90k.)
+`train.py` saves checkpoints every 10k steps. PPO on this task tends to learn
+to push more aggressively over training (overshooting and dropping the object
+— the bug — increasingly often from ~step 60k on). Measured across 15 seeds x
+20 stochastic rollouts/checkpoint (see Trial statistics below), the bug
+reproduction rate rises from 0% at step 50k to 54% by step 100k and plateaus
+there — it does **not** self-correct back down with more training. (An
+earlier version of this doc claimed 2 of 3 seeds "self-correct into a clean
+success behavior" by ~80k-90k; that was based on eyeballing one deterministic
+episode per checkpoint per seed, which the real aggregate data does not
+support once episodes actually vary from run to run.)
+
+**Pick the demo checkpoint using measured data, not eyeballing.** Run
+`run_trials.py` + `analyze_trials.py` (below) to get a real bug-reproduction
+rate per checkpoint step, aggregated across many seeds and many stochastic
+rollouts each — then pick a checkpoint step with a high measured rate for the
+flagship demo episode, backed by a number like "83% across 300 episodes"
+instead of "this one episode looked right."
+
+## Trial statistics (`run_trials.py` + `analyze_trials.py`)
+
+The 3 flagship runs below are one hand-picked episode each — good for the
+demo's qualitative rollout-video panel, but not itself evidence that the bug
+generalizes. `run_trials.py` trains many additional seeds and, for every
+checkpoint, runs many stochastic episodes with randomized start positions
+(see `env.py`'s `reset()`) so repeated rollouts of the same checkpoint are
+genuinely different trials rather than a replay of the same episode:
+
+```bash
+python run_trials.py --num_seeds 15 --timesteps 100000 --episodes_per_checkpoint 20
+python analyze_trials.py
+```
+
+This appends every episode's outcome to `outputs/trial_log.jsonl` and produces
+`outputs/trial_summary.json` (per-checkpoint bug rate / success rate / mean
+reward, aggregated across all seeds) and `outputs/bug_rate_curve.png` (bug
+reproduction rate vs. checkpoint step) — turning "2 of 3 seeds self-correct"
+from an anecdote into a measured curve over dozens of seeds and hundreds of
+episodes per checkpoint. Each run of `run_trials.py` trains fresh seeds
+starting at `--seed_start` (default 4), so it never touches the existing
+run1-3 checkpoints/outputs below.
 
 ## Output layout
 
@@ -79,7 +111,37 @@ Use's WandB screenshot actually lines up with logged data.
 | 2 | `model_100000_steps` | drops the object | 63 |
 | 3 | `model_70000_steps` | drops the object | 64 |
 
-All three sets pass `check_gemma_contract.py`.
+All three sets pass `check_gemma_contract.py`. **Note:** these 3 checkpoints
+were the original hand-eyeballed selection (pre-dating the randomized-start
+env and the trial-statistics harness above) — they still work as Gemma's
+input contract, but weren't chosen using the measured bug-rate data. Left
+in place as-is since other streams may already reference these exact paths.
+
+## Evidence-selected runs (4-6)
+
+Runs 4-6 are the same `manifest.json`/`frames`/`reward_curve.png` shape as 1-3,
+but each checkpoint was chosen from `run_trials.py`'s sweep data (already-
+trained seeds 4-18) based on a high *measured* stochastic bug rate at that
+step, then confirmed to reproduce the bug under a fixed, reproducible
+`--episode_seed` (deterministic action selection alone isn't enough to
+reproduce a clip run-to-run anymore now that start position is randomized --
+`rollout.py`'s `--episode_seed` pins that randomness). They also span the
+bug's emergence curve rather than all looking like near-duplicates:
+
+| Run | Checkpoint (seed) | Checkpoint step | Measured stochastic bug rate at this step | Drop step |
+|---|---|---|---|---|
+| 4 | seed 7, `model_60000_steps` | 60,000 | 20% (early emergence) | 66 |
+| 5 | seed 11, `model_80000_steps` | 80,000 | 70% (growing) | 63 |
+| 6 | seed 5, `model_100000_steps` | 100,000 | 90% (strong evidence) | 65 |
+
+Regenerate with (checkpoints already exist from the sweep, so this only
+re-runs the deterministic rollout, not training):
+
+```bash
+python rollout.py --run_id 4 --checkpoint checkpoints/run7/model_60000_steps.zip --checkpoint_step 60000 --episode_seed 0
+python rollout.py --run_id 5 --checkpoint checkpoints/run11/model_80000_steps.zip --checkpoint_step 80000 --episode_seed 0
+python rollout.py --run_id 6 --checkpoint checkpoints/run5/model_100000_steps.zip --checkpoint_step 100000 --episode_seed 3
+```
 
 ## Files
 

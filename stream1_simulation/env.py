@@ -23,6 +23,9 @@ PUSHER_START_XY = (0.0, -0.42)
 PUSHER_MASS = 0.2
 PUSHER_BOUND = 0.55  # xy clamp, slightly beyond the table so it can trail the object near the edge
 
+OBJECT_START_JITTER = 0.05  # +/- meters, x-only, sampled fresh each reset()
+PUSHER_START_JITTER = 0.03
+
 TARGET_XY = (0.0, 0.35)  # deliberately close to the y=+0.5 edge
 
 MAX_SPEED = 0.5  # m/s
@@ -60,6 +63,8 @@ class PushEnv(Env):
         self._object_id = None
         self._pusher_id = None
         self._step_count = 0
+        self._object_start_xy = OBJECT_START_XY
+        self._pusher_start_xy = PUSHER_START_XY
 
         self._view_matrix = p.computeViewMatrix(CAMERA_EYE, CAMERA_TARGET, CAMERA_UP)
         self._proj_matrix = p.computeProjectionMatrixFOV(
@@ -94,8 +99,8 @@ class PushEnv(Env):
             baseCollisionShapeIndex=obj_col,
             baseVisualShapeIndex=obj_vis,
             basePosition=[
-                OBJECT_START_XY[0],
-                OBJECT_START_XY[1],
+                self._object_start_xy[0],
+                self._object_start_xy[1],
                 TABLE_TOP_Z + OBJECT_HALF_EXTENT + 0.001,
             ],
         )
@@ -110,8 +115,8 @@ class PushEnv(Env):
             baseCollisionShapeIndex=pusher_col,
             baseVisualShapeIndex=pusher_vis,
             basePosition=[
-                PUSHER_START_XY[0],
-                PUSHER_START_XY[1],
+                self._pusher_start_xy[0],
+                self._pusher_start_xy[1],
                 TABLE_TOP_Z + PUSHER_RADIUS + 0.001,
             ],
         )
@@ -148,6 +153,17 @@ class PushEnv(Env):
 
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
+        # Jitter start x-position each episode (drawn from the seeded
+        # np_random) so repeated rollouts of the same policy/checkpoint are
+        # genuinely different trials rather than a bit-for-bit replay.
+        self._object_start_xy = (
+            OBJECT_START_XY[0] + self.np_random.uniform(-OBJECT_START_JITTER, OBJECT_START_JITTER),
+            OBJECT_START_XY[1],
+        )
+        self._pusher_start_xy = (
+            PUSHER_START_XY[0] + self.np_random.uniform(-PUSHER_START_JITTER, PUSHER_START_JITTER),
+            PUSHER_START_XY[1],
+        )
         self._build_scene()
         self._step_count = 0
         return self._get_obs(), {}

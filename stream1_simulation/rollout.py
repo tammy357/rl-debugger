@@ -27,27 +27,27 @@ def _infer_checkpoint_step(checkpoint_path):
     return int(match.group(1)) if match else None
 
 
-def run_rollout(run_id, checkpoint_path, checkpoint_step=None, out_dir=None):
-    if checkpoint_step is None:
-        checkpoint_step = _infer_checkpoint_step(checkpoint_path)
+def run_episode(model, env, deterministic=True, collect_frames=False, seed=None):
+    """Runs one episode and returns its metrics (and optionally frames).
 
-    out_dir = out_dir or os.path.join(STREAM1_DIR, "outputs", f"run{run_id}")
-    frames_dir = os.path.join(out_dir, "frames")
-    os.makedirs(frames_dir, exist_ok=True)
+    Used both by run_rollout() (single flagship episode, deterministic action
+    selection + a fixed seed so the clip is exactly reproducible run to run,
+    frames on) and by run_trials.py's batch sweep (many stochastic episodes
+    with no seed so each draws a fresh random start position, frames off --
+    writing a PNG per step for hundreds of trial episodes would be wasteful).
+    """
+    obs, _ = env.reset(seed=seed)
 
-    model = PPO.load(checkpoint_path)
-    env = PushEnv()
-    obs, _ = env.reset()
-
-    all_frames = []  # list of (sim_step, rgb array)
+    all_frames = []  # list of (sim_step, rgb array), only populated if collect_frames
     rewards = []
     drop_step = None
     success_step = None
 
     sim_step = 0
     while True:
-        all_frames.append((sim_step, env.get_camera_image()))
-        action, _ = model.predict(obs, deterministic=True)
+        if collect_frames:
+            all_frames.append((sim_step, env.get_camera_image()))
+        action, _ = model.predict(obs, deterministic=deterministic)
         obs, reward, terminated, truncated, info = env.step(action)
         rewards.append(float(reward))
 
@@ -58,10 +58,38 @@ def run_rollout(run_id, checkpoint_path, checkpoint_step=None, out_dir=None):
 
         sim_step += 1
         if terminated or truncated:
-            all_frames.append((sim_step, env.get_camera_image()))
+            if collect_frames:
+                all_frames.append((sim_step, env.get_camera_image()))
             break
 
+    return {
+        "frames": all_frames,
+        "rewards": rewards,
+        "num_episode_steps": sim_step,
+        "drop_step": drop_step,
+        "success_step": success_step,
+        "success": success_step is not None,
+        "total_reward": sum(rewards),
+    }
+
+
+def run_rollout(run_id, checkpoint_path, checkpoint_step=None, out_dir=None, episode_seed=0):
+    if checkpoint_step is None:
+        checkpoint_step = _infer_checkpoint_step(checkpoint_path)
+
+    out_dir = out_dir or os.path.join(STREAM1_DIR, "outputs", f"run{run_id}")
+    frames_dir = os.path.join(out_dir, "frames")
+    os.makedirs(frames_dir, exist_ok=True)
+
+    model = PPO.load(checkpoint_path)
+    env = PushEnv()
+    episode = run_episode(model, env, deterministic=True, collect_frames=True, seed=episode_seed)
     env.close()
+
+    all_frames = episode["frames"]
+    rewards = episode["rewards"]
+    drop_step = episode["drop_step"]
+    success_step = episode["success_step"]
 
     n_total = len(all_frames)
     keep_indices = sample_frame_indices(n_total, drop_step=drop_step)
@@ -89,8 +117,8 @@ def run_rollout(run_id, checkpoint_path, checkpoint_step=None, out_dir=None):
         "step_range": step_range,
         "num_episode_steps": n_total - 1,
         "drop_step": drop_step,
-        "success": success_step is not None,
-        "total_reward": sum(rewards),
+        "success": episode["success"],
+        "total_reward": episode["total_reward"],
         "frames": frame_records,
         "reward_curve": "reward_curve.png",
     }
@@ -104,11 +132,13 @@ def run_rollout(run_id, checkpoint_path, checkpoint_step=None, out_dir=None):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--run_id", type=int, required=True, choices=[1, 2, 3])
+    parser.add_argument("--run_id", type=int, required=True)
     parser.add_argument("--checkpoint", type=str, required=True)
     parser.add_argument("--checkpoint_step", type=int, default=None)
+    parser.add_argument("--episode_seed", type=int, default=0,
+                         help="seeds the episode's randomized start position so the flagship clip is reproducible")
     args = parser.parse_args()
-    run_rollout(args.run_id, args.checkpoint, checkpoint_step=args.checkpoint_step)
+    run_rollout(args.run_id, args.checkpoint, checkpoint_step=args.checkpoint_step, episode_seed=args.episode_seed)
 
 
 if __name__ == "__main__":

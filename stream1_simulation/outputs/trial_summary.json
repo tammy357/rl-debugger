@@ -1,0 +1,106 @@
+{
+  "n_seeds": 15,
+  "n_total_episodes": 3000,
+  "per_checkpoint": [
+    {
+      "checkpoint_step": 10000,
+      "n_episodes": 300,
+      "n_dropped": 0,
+      "n_success": 0,
+      "bug_rate": 0.0,
+      "success_rate": 0.0,
+      "mean_reward": -260.83471996479767,
+      "std_reward": 20.394126813528622
+    },
+    {
+      "checkpoint_step": 20000,
+      "n_episodes": 300,
+      "n_dropped": 0,
+      "n_success": 0,
+      "bug_rate": 0.0,
+      "success_rate": 0.0,
+      "mean_reward": -257.03485622765197,
+      "std_reward": 21.565327604295334
+    },
+    {
+      "checkpoint_step": 30000,
+      "n_episodes": 300,
+      "n_dropped": 0,
+      "n_success": 0,
+      "bug_rate": 0.0,
+      "success_rate": 0.0,
+      "mean_reward": -250.39944978561806,
+      "std_reward": 26.573638931307148
+    },
+    {
+      "checkpoint_step": 40000,
+      "n_episodes": 300,
+      "n_dropped": 0,
+      "n_success": 0,
+      "bug_rate": 0.0,
+      "success_rate": 0.0,
+      "mean_reward": -235.7184961951134,
+      "std_reward": 32.3271056633894
+    },
+    {
+      "checkpoint_step": 50000,
+      "n_episodes": 300,
+      "n_dropped": 0,
+      "n_success": 1,
+      "bug_rate": 0.0,
+      "success_rate": 0.0033333333333333335,
+      "mean_reward": -215.27137976492978,
+      "std_reward": 43.87238343042619
+    },
+    {
+      "checkpoint_step": 60000,
+      "n_episodes": 300,
+      "n_dropped": 27,
+      "n_success": 14,
+      "bug_rate": 0.09,
+      "success_rate": 0.04666666666666667,
+      "mean_reward": -180.41129559462084,
+      "std_reward": 68.9737558885093
+    },
+    {
+      "checkpoint_step": 70000,
+      "n_episodes": 300,
+      "n_dropped": 69,
+      "n_success": 30,
+      "bug_rate": 0.23,
+      "success_rate": 0.1,
+      "mean_reward": -136.74914482937479,
+      "std_reward": 78.50096087876382
+    },
+    {
+      "checkpoint_step": 80000,
+      "n_episodes": 300,
+      "n_dropped": 138,
+      "n_success": 47,
+      "bug_rate": 0.46,
+      "success_rate": 0.15666666666666668,
+      "mean_reward": -96.17497184846417,
+      "std_reward": 72.26587016408874
+    },
+    {
+      "checkpoint_step": 90000,
+      "n_episodes": 300,
+      "n_dropped": 153,
+      "n_success": 43,
+      "bug_rate": 0.51,
+      "success_rate": 0.14333333333333334,
+      "mean_reward": -93.92242065367195,
+      "std_reward": 78.62925827833475
+    },
+    {
+      "checkpoint_step": 100000,
+      "n_episodes": 300,
+      "n_dropped": 161,
+      "n_success": 57,
+      "bug_rate": 0.5366666666666666,
+      "success_rate": 0.19,
+      "mean_reward": -79.39473475623684,
+      "std_reward": 74.51861264598683
+    }
+  ]
+}
