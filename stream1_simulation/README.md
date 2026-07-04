@@ -80,3 +80,12 @@ Use's WandB screenshot actually lines up with logged data.
 | 3 | `model_70000_steps` | drops the object | 64 |
 
 All three sets pass `check_gemma_contract.py`.
+
+## Files
+
+`env.py`: defines `PushEnv`, the PyBullet pushing task and its deliberately buggy reward function, imported by every other script below.
+`train.py`: trains a PPO policy on `PushEnv` and saves periodic checkpoints, logging to WandB.
+`rollout.py`: loads a checkpoint saved by `train.py` and runs it through `PushEnv` to produce a run's frames, reward-curve chart, and `manifest.json`.
+`record_utils.py`: frame-sampling and reward-curve-plotting helpers used by `rollout.py`.
+`sanity_check.py`: runs a random policy through `PushEnv` as a <30s smoke test of the physics and camera, meant to catch env bugs before spending time on a full `train.py` run.
+`check_gemma_contract.py`: validates that a run's `rollout.py` output matches the shape Stream 2's `analyze_run(frames, chart, hypothesis_log)` expects.
