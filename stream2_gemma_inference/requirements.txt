@@ -1,0 +1,11 @@
+# Pick ONE local inference backend depending on your setup:
+
+# Option A: llama.cpp Python bindings
+# llama-cpp-python>=0.2.90
+
+# Option B: LM Studio SDK / local server (if serving Gemma via LM Studio's
+# OpenAI-compatible endpoint, no extra package needed beyond `requests`)
+# requests>=2.31.0
+
+huggingface_hub>=0.20.0
+numpy>=1.24.0

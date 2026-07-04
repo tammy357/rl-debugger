@@ -1,0 +1,17 @@
+{
+  "run": 2,
+  "timestamp": "2026-01-01T12:00:00Z",
+  "confirmed": [
+    "missing penalty for dropping object"
+  ],
+  "ruled_out": [
+    "gripper friction too low",
+    "reward scale mismatch between shaping terms"
+  ],
+  "next_to_check": {
+    "run": 2,
+    "step_range": [47000, 52000],
+    "reason": "reward spikes right before object drop, want to confirm the policy exploits this"
+  },
+  "proposed_reward_edit": "add -1.0 penalty on object.z < table_height"
+}

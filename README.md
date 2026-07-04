@@ -31,9 +31,12 @@ rl-policy-debugger/
 ├── stream3_agent_loop/       # Antigravity state + orchestration loop
 ├── stream4_demo_ui/          # Computer Use (Playwright/WandB) + Gradio UI
 ├── docs/                     # shared contracts, integration notes
-├── requirements.txt
 └── README.md
 ```
+
+Each `streamN_*/` folder has its own `requirements.txt` — install only the
+one for your lane, so you're never fighting a teammate's build (e.g.
+pybullet's C++ compile) just to run your own code.
 
 ## Ownership
 
@@ -75,9 +78,18 @@ Stream 4 returns a screenshot path/URL for that view.
 
 ## Setup
 
+Install only your own stream's dependencies — no need to fight a teammate's
+build just to run your own code:
+
 ```bash
 python -m venv venv && source venv/bin/activate
-pip install -r requirements.txt
+# or: conda create -n rl-debugger python=3.10 -y && conda activate rl-debugger
+
+pip install -r stream1_simulation/requirements.txt       # robotics
+pip install -r stream2_gemma_inference/requirements.txt  # RL
+pip install -r stream3_agent_loop/requirements.txt       # platform
+pip install -r stream4_demo_ui/requirements.txt          # frontend/backend
+
 playwright install chromium   # Stream 4 only
 ```
 
