@@ -1,7 +1,5 @@
 # Stream 3 — Antigravity State + Agent Loop
 
-*Owner: Platform*
-
 Owns persistent hypothesis state and the orchestration loop tying Streams
 1, 2, and 4 together. See root `docs/BUILD_PLAN.md` for the hour-by-hour
 plan.
