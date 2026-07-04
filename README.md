@@ -103,7 +103,7 @@ llama-server -hf ggml-org/gemma-4-12B-it-GGUF -c 8192 --port 8080 --reasoning-bu
 Run the agent loop, then launch the demo:
 
 ```
-python stream3_agent_loop/agent_loop.py --run 1 --run 2 --run 3
+python stream3_agent_loop/agent_loop.py --run 1 --run 2 --run 3 --run 4 --run 5 --run 6 --run 7 --run 8 --run 9 --run 10
 python stream4_demo_ui/app.py
 ```
 
