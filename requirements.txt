@@ -1,0 +1,19 @@
+# Stream 4 (Demo UI + Computer Use) — install these first, this is your lane
+gradio>=4.0.0
+playwright>=1.40.0
+Pillow>=10.0.0
+
+# Stream 1 (Simulation) — robotics teammate
+pybullet>=3.2.5
+stable-baselines3>=2.0.0
+matplotlib>=3.7.0
+
+# Stream 2 (Gemma inference) — RL teammate
+# llama-cpp-python or LM Studio SDK, install per their setup choice
+
+# Stream 3 (Agent loop / state) — platform engineer
+# no special deps if using local JSON fallback for Antigravity
+
+# Shared
+wandb>=0.16.0
+numpy>=1.24.0
