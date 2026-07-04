@@ -1,17 +1,12 @@
 """
-Stream 3 — Agent loop.
+Stream 3 — Agent loop. Statement Five (local/offline) -- Computer Use/WandB
+removed, local JSON state is the preferred path (not a fallback).
 
 for each run:
-    load hypothesis_log from Antigravity (local JSON fallback: state.py)
-    call Gemma inference (Stream 2)
-    update hypothesis_log
-    save back to Antigravity
-    call Computer Use trigger (Stream 4)
-    surface result to UI (Stream 4 reads state/ directly, see app.py)
-
-Run standalone:
-    python agent_loop.py --run 1
-    python agent_loop.py --run 1 --run 2 --run 3   (repeat --run for each)
+    load hypothesis_log from local JSON state
+    call Gemma inference (Stream 2's real analyze_run)
+    save the returned state VERBATIM (it's complete cumulative state, not a
+        delta -- do not merge, or run-1 findings vanish on run 2)
 """
 import argparse
 import json
@@ -21,14 +16,12 @@ import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 from stream3_agent_loop.state import load_hypothesis_log, new_hypothesis_log, save_hypothesis_log
-from stream2_gemma_inference.analyze_run_stub import analyze_run  # swap for real Stream 2 module later
-from stream4_demo_ui.computer_use import TimestepRequest, fetch_wandb_screenshot
+from stream2_gemma_inference import analyze_run, AnalyzeRunError
 
 STREAM1_OUTPUTS = os.path.join(os.path.dirname(__file__), "..", "stream1_simulation", "outputs")
 
 
 def load_run_inputs(run: int):
-    """Loads frames + reward curve path for a run from Stream 1's manifest."""
     manifest_path = os.path.join(STREAM1_OUTPUTS, f"run{run}", "manifest.json")
     if not os.path.exists(manifest_path):
         raise FileNotFoundError(
@@ -44,34 +37,32 @@ def load_run_inputs(run: int):
 
 
 def process_run(run: int) -> dict:
-    """Runs one full iteration of the loop for a single run. Returns the
-    updated hypothesis log."""
     frames, chart, manifest = load_run_inputs(run)
 
     hypothesis_log = load_hypothesis_log(run) or new_hypothesis_log(run)
-    print(f"[run {run}] loaded hypothesis log: "
-          f"{len(hypothesis_log['confirmed'])} confirmed, {len(hypothesis_log['ruled_out'])} ruled out")
+    print(f"[run {run}] loaded: {len(hypothesis_log['confirmed'])} confirmed, "
+          f"{len(hypothesis_log['ruled_out'])} ruled out")
 
-    # manifest carries drop_step, step_range, total_reward, num_episode_steps,
-    # success, etc. -- the same log data a human researcher would read
-    # alongside the rollout video, not just the pixels.
-    updated_log = analyze_run(frames, chart, manifest, hypothesis_log)
+    # Real signature: analyze_run(frames, chart, hypothesis_log, manifest).
+    # Always use keywords -- positional args swap silently with no error.
+    try:
+        updated_log = analyze_run(frames, chart, hypothesis_log=hypothesis_log, manifest=manifest)
+    except AnalyzeRunError as e:
+        print(f"[run {run}] analyze_run failed ({e.kind}): {e}")
+        return hypothesis_log
+
     save_hypothesis_log(run, updated_log)
     print(f"[run {run}] saved updated hypothesis log")
 
-    next_check = updated_log.get("next_to_check")
-    if next_check:
-        req = TimestepRequest(run=next_check["run"], step_range=tuple(next_check["step_range"]))
-        screenshot_path = fetch_wandb_screenshot(req)
-        print(f"[run {run}] Computer Use screenshot: {screenshot_path}")
+    if updated_log.get("next_to_check") is None:
+        print(f"[run {run}] no next_to_check flagged (converged/confident)")
 
     return updated_log
 
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--run", type=int, action="append", required=True,
-                         help="Run number to process. Repeat --run for multiple runs.")
+    parser.add_argument("--run", type=int, action="append", required=True)
     args = parser.parse_args()
 
     for run in args.run:
