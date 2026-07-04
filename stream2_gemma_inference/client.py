@@ -14,12 +14,15 @@ DEFAULT_MODEL = "local-gemma"
 
 class GemmaClient:
     def __init__(self, base_url=None, model=None, timeout=120.0,
-                 temperature=0.2, max_tokens=1200):
+                 temperature=0.2, max_tokens=None):
         self.base_url = (base_url or os.environ.get("GEMMA_BASE_URL", DEFAULT_BASE_URL)).rstrip("/")
         self.model = model or os.environ.get("GEMMA_MODEL", DEFAULT_MODEL)
         self.timeout = timeout
         self.temperature = temperature
-        self.max_tokens = max_tokens
+        # env override so deep-analysis mode (thinking enabled server-side)
+        # can raise the completion budget without a code change
+        self.max_tokens = max_tokens if max_tokens is not None else int(
+            os.environ.get("GEMMA_MAX_TOKENS", 1200))
         self.last_usage = None
 
     def chat(self, messages, temperature=None):
