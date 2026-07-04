@@ -100,9 +100,12 @@ def load_reward_curve(run: int) -> str | None:
 
 
 def refresh(run: int, seen_state: dict):
-    """seen_state tracks {"confirmed": set(...), "ruled_out": set(...)} from
-    the last poll, so newly-appeared items can be flagged with 🆕."""
-    seen_state = seen_state or {"confirmed": set(), "ruled_out": set()}
+    """seen_state tracks {"confirmed": [...], "ruled_out": [...]} from the
+    last poll (lists, not sets — gr.State must stay JSON-serializable), so
+    newly-appeared items can be flagged with 🆕."""
+    seen_state = seen_state or {"confirmed": [], "ruled_out": []}
+    prev_confirmed = set(seen_state["confirmed"])
+    prev_ruled_out = set(seen_state["ruled_out"])
 
     frames = load_frames(run)
     curve = load_reward_curve(run)
@@ -111,11 +114,11 @@ def refresh(run: int, seen_state: dict):
     if data is None:
         return frames, curve, f"No hypothesis log found for run {run} yet.", seen_state
 
-    hyp_md = format_hypothesis(data, seen_state["confirmed"], seen_state["ruled_out"])
+    hyp_md = format_hypothesis(data, prev_confirmed, prev_ruled_out)
 
     new_state = {
-        "confirmed": set(data.get("confirmed", [])),
-        "ruled_out": set(data.get("ruled_out", [])),
+        "confirmed": list(data.get("confirmed", [])),
+        "ruled_out": list(data.get("ruled_out", [])),
     }
     return frames, curve, hyp_md, new_state
 
