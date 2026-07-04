@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+venv/
+.env
+*.gguf
+stream4_demo_ui/screenshots/
+stream1_simulation/checkpoints/
+stream1_simulation/rollouts/
+wandb/
+.DS_Store

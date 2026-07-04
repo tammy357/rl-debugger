@@ -1,0 +1,7 @@
+# No special deps needed if using the local JSON fallback for Antigravity
+# (stdlib json + os are enough).
+#
+# Uncomment if real Antigravity API access is confirmed:
+# antigravity-sdk
+
+python-dotenv>=1.0.0
