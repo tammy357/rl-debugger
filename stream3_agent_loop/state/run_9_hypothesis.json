@@ -1,0 +1,10 @@
+{
+  "confirmed": [
+    "The reward function does not penalize the pole falling (frame 3; pole_fall_step: 19)"
+  ],
+  "ruled_out": [],
+  "next_to_check": null,
+  "proposed_reward_edit": "Add a large negative penalty for the pole falling (pole_fall_step).",
+  "run": 9,
+  "timestamp": "2026-07-04T23:14:17.321029+00:00"
+}

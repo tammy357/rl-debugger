@@ -36,10 +36,13 @@ def load_run_inputs(run: int):
     return frames, chart, manifest
 
 
-def process_run(run: int) -> dict:
+def process_run(run: int, prior_log: dict = None) -> dict:
     frames, chart, manifest = load_run_inputs(run)
 
-    hypothesis_log = load_hypothesis_log(run) or new_hypothesis_log(run)
+    # Carry forward the log from the previous run in THIS invocation's
+    # sequence if given; otherwise fall back to this run's own last-saved
+    # state (resuming a partial sequence), or a fresh log if neither exists.
+    hypothesis_log = prior_log if prior_log is not None else (load_hypothesis_log(run) or new_hypothesis_log(run))
     print(f"[run {run}] loaded: {len(hypothesis_log['confirmed'])} confirmed, "
           f"{len(hypothesis_log['ruled_out'])} ruled out")
 
@@ -65,9 +68,10 @@ def main():
     parser.add_argument("--run", type=int, action="append", required=True)
     args = parser.parse_args()
 
+    prior_log = None
     for run in args.run:
         try:
-            process_run(run)
+            prior_log = process_run(run, prior_log)
         except FileNotFoundError as e:
             print(f"[run {run}] SKIPPED: {e}")
 

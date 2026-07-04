@@ -31,7 +31,8 @@ def sample_frame_indices(n_total_steps, drop_step=None, n_frames=N_SAMPLED_FRAME
     return sorted(set(indices))
 
 
-def plot_reward_curve(rewards, run_id, drop_step=None, success_step=None, out_path=None):
+def plot_reward_curve(rewards, run_id, drop_step=None, success_step=None, out_path=None,
+                       event_label="object dropped"):
     """Save a reward-curve PNG for one rollout, styled per the dataviz skill:
     single series (no legend, title names it), status-colored event annotations,
     text always in ink/muted tokens rather than the series color."""
@@ -63,7 +64,7 @@ def plot_reward_curve(rewards, run_id, drop_step=None, success_step=None, out_pa
         ax.text(
             drop_step,
             ymax - 0.05 * (ymax - ymin),
-            f"  object dropped, step {drop_step}",
+            f"  {event_label}, step {drop_step}",
             color=COLOR_INK,
             fontsize=9,
             va="top",

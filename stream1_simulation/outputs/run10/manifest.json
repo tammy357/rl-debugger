@@ -1,0 +1,78 @@
+{
+  "run": 10,
+  "task": "cartpole_balance",
+  "checkpoint_path": "checkpoints/bonus_cartpole/seed301_fine/model_10000_steps.zip",
+  "checkpoint_step": 10000,
+  "step_range": [
+    7500,
+    12500
+  ],
+  "num_episode_steps": 48,
+  "drop_step": 16,
+  "pole_fall_step": 16,
+  "success": true,
+  "total_reward": 22.87301899225153,
+  "frames": [
+    {
+      "file": "frames/frame_0000.png",
+      "sim_step": 0
+    },
+    {
+      "file": "frames/frame_0001.png",
+      "sim_step": 3
+    },
+    {
+      "file": "frames/frame_0002.png",
+      "sim_step": 7
+    },
+    {
+      "file": "frames/frame_0003.png",
+      "sim_step": 11
+    },
+    {
+      "file": "frames/frame_0004.png",
+      "sim_step": 14
+    },
+    {
+      "file": "frames/frame_0005.png",
+      "sim_step": 16
+    },
+    {
+      "file": "frames/frame_0006.png",
+      "sim_step": 18
+    },
+    {
+      "file": "frames/frame_0007.png",
+      "sim_step": 22
+    },
+    {
+      "file": "frames/frame_0008.png",
+      "sim_step": 25
+    },
+    {
+      "file": "frames/frame_0009.png",
+      "sim_step": 29
+    },
+    {
+      "file": "frames/frame_0010.png",
+      "sim_step": 33
+    },
+    {
+      "file": "frames/frame_0011.png",
+      "sim_step": 36
+    },
+    {
+      "file": "frames/frame_0012.png",
+      "sim_step": 40
+    },
+    {
+      "file": "frames/frame_0013.png",
+      "sim_step": 44
+    },
+    {
+      "file": "frames/frame_0014.png",
+      "sim_step": 48
+    }
+  ],
+  "reward_curve": "reward_curve.png"
+}

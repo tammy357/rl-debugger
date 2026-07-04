@@ -19,6 +19,7 @@ import gradio as gr
 HERE = os.path.dirname(os.path.abspath(__file__))
 MOCK_DIR = os.path.join(HERE, "mock_data")
 STREAM1_OUTPUTS = os.path.join(HERE, "..", "stream1_simulation", "outputs")
+STREAM3_STATE = os.path.join(HERE, "..", "stream3_agent_loop", "state")
 
 AUTO_REFRESH_SECONDS = 4  # how often the demo polls for new hypothesis data
 
@@ -33,9 +34,12 @@ def load_manifest(run: int) -> dict | None:
 
 
 def load_hypothesis_data(run: int) -> dict | None:
-    """Real hypothesis log will come from Stream 3 once it exists (see
-    check_gemma_contract.py's dummy stand-in for the exact shape). Falls back
-    to the Stream 4 mock JSON if Stream 3 hasn't produced one yet."""
+    """Prefers Stream 3's real agent-loop output; falls back to the Stream 4
+    mock JSON if Stream 3 hasn't produced one for this run yet."""
+    real_path = os.path.join(STREAM3_STATE, f"run_{run}_hypothesis.json")
+    if os.path.exists(real_path):
+        with open(real_path) as f:
+            return json.load(f)
     mock_path = os.path.join(MOCK_DIR, f"run_{run}_hypothesis.json")
     if os.path.exists(mock_path):
         with open(mock_path) as f:
