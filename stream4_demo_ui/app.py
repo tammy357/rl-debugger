@@ -4,7 +4,7 @@ Stream 4 — Demo UI.
 Three panels:
   left   - current rollout video/frame
   center - reward curve with flagged timestep highlighted
-  right  - live hypothesis log
+  right  - live hypothesis log (auto-refreshes, highlights new items)
 
 Run standalone against mock data:
     python mock_data/generate_placeholders.py   # once, to create mock assets
@@ -19,41 +19,50 @@ import gradio as gr
 HERE = os.path.dirname(os.path.abspath(__file__))
 MOCK_DIR = os.path.join(HERE, "mock_data")
 
+AUTO_REFRESH_SECONDS = 4  # how often the demo polls for new hypothesis data
 
-def load_hypothesis_log(run: int) -> str:
+
+def load_hypothesis_data(run: int) -> dict | None:
     path = os.path.join(MOCK_DIR, f"run_{run}_hypothesis.json")
     if not os.path.exists(path):
-        return f"No hypothesis log found for run {run} yet."
+        return None
     with open(path) as f:
-        data = json.load(f)
-    return format_hypothesis(data)
+        return json.load(f)
 
 
-def format_hypothesis(data: dict) -> str:
+def format_hypothesis(data: dict, prev_confirmed: set, prev_ruled_out: set) -> str:
+    """Renders the hypothesis log, marking items not seen on the previous
+    poll with 🆕 so new findings visibly stand out during a live demo."""
     lines = [f"### Run {data['run']} — {data['timestamp']}", ""]
+
     lines.append("**Confirmed:**")
     for item in data.get("confirmed", []):
-        lines.append(f"- ✅ {item}")
+        tag = "🆕 " if item not in prev_confirmed else ""
+        lines.append(f"- ✅ {tag}{item}")
     lines.append("")
+
     lines.append("**Ruled out:**")
     for item in data.get("ruled_out", []):
-        lines.append(f"- ❌ {item}")
+        tag = "🆕 " if item not in prev_ruled_out else ""
+        lines.append(f"- ❌ {tag}{item}")
     lines.append("")
+
     nxt = data.get("next_to_check", {})
     if nxt:
         lines.append("**Next to check:**")
         lines.append(f"- Run {nxt.get('run')}, steps {nxt.get('step_range')}")
         lines.append(f"  _{nxt.get('reason', '')}_")
+
     edit = data.get("proposed_reward_edit")
     if edit:
         lines.append("")
         lines.append(f"**Proposed reward edit:** `{edit}`")
+
     return "\n".join(lines)
 
 
 def load_frames() -> list[str]:
-    frames = sorted(glob.glob(os.path.join(MOCK_DIR, "sample_frames", "*.png")))
-    return frames
+    return sorted(glob.glob(os.path.join(MOCK_DIR, "sample_frames", "*.png")))
 
 
 def load_reward_curve() -> str | None:
@@ -61,19 +70,36 @@ def load_reward_curve() -> str | None:
     return path if os.path.exists(path) else None
 
 
-def refresh(run: int):
+def refresh(run: int, seen_state: dict):
+    """seen_state tracks {"confirmed": set(...), "ruled_out": set(...)} from
+    the last poll, so newly-appeared items can be flagged with 🆕."""
+    seen_state = seen_state or {"confirmed": set(), "ruled_out": set()}
+
     frames = load_frames()
     curve = load_reward_curve()
-    hyp = load_hypothesis_log(run)
-    return frames, curve, hyp
+    data = load_hypothesis_data(run)
+
+    if data is None:
+        return frames, curve, f"No hypothesis log found for run {run} yet.", seen_state
+
+    hyp_md = format_hypothesis(data, seen_state["confirmed"], seen_state["ruled_out"])
+
+    new_state = {
+        "confirmed": set(data.get("confirmed", [])),
+        "ruled_out": set(data.get("ruled_out", [])),
+    }
+    return frames, curve, hyp_md, new_state
 
 
 with gr.Blocks(title="RL Policy Debugger") as demo:
     gr.Markdown("# RL Policy Debugger — Live Diagnosis")
 
+    seen_items = gr.State({"confirmed": set(), "ruled_out": set()})
+
     with gr.Row():
         run_selector = gr.Number(value=2, label="Run", precision=0)
-        refresh_btn = gr.Button("Refresh")
+        refresh_btn = gr.Button("Refresh now")
+        auto_refresh = gr.Checkbox(value=True, label="Auto-refresh")
 
     with gr.Row():
         with gr.Column():
@@ -86,17 +112,17 @@ with gr.Blocks(title="RL Policy Debugger") as demo:
             gr.Markdown("### Hypothesis Log")
             hypothesis_md = gr.Markdown()
 
-    refresh_btn.click(
-        fn=refresh,
-        inputs=[run_selector],
-        outputs=[rollout_gallery, reward_img, hypothesis_md],
-    )
+    outputs = [rollout_gallery, reward_img, hypothesis_md, seen_items]
 
-    demo.load(
-        fn=refresh,
-        inputs=[run_selector],
-        outputs=[rollout_gallery, reward_img, hypothesis_md],
-    )
+    refresh_btn.click(fn=refresh, inputs=[run_selector, seen_items], outputs=outputs)
+    demo.load(fn=refresh, inputs=[run_selector, seen_items], outputs=outputs)
+
+    # Auto-refresh: gr.Timer polls on an interval and re-fires `refresh` while
+    # the checkbox is on. This is what makes the hypothesis panel feel "live"
+    # during the demo instead of requiring a manual click each time.
+    timer = gr.Timer(AUTO_REFRESH_SECONDS, active=True)
+    timer.tick(fn=refresh, inputs=[run_selector, seen_items], outputs=outputs)
+    auto_refresh.change(fn=lambda on: gr.Timer(active=on), inputs=[auto_refresh], outputs=[timer])
 
 if __name__ == "__main__":
     demo.launch()
