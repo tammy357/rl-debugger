@@ -1,0 +1,11 @@
+venv/
+.venv/
+env/
+ENV/
+__pycache__/
+*.pyc
+
+# Stream 1 local training artifacts -- regenerate via train.py, not meant to be committed
+stream1_simulation/checkpoints/
+stream1_simulation/tb_logs/
+wandb/
