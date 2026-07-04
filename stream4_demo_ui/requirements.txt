@@ -1,6 +1,5 @@
-gradio>=4.0.0
-playwright>=1.40.0
+gradio>=4.32.0
 Pillow>=10.0.0
-wandb>=0.16.0
+matplotlib>=3.7.0
 numpy>=1.24.0
 python-dotenv>=1.0.0
