@@ -4,9 +4,6 @@ venv/
 .env
 *.gguf
 stream4_demo_ui/screenshots/
-stream1_simulation/checkpoints/
-stream1_simulation/rollouts/
-wandb/
 .DS_Store
 venv/
 .venv/
@@ -15,7 +12,8 @@ ENV/
 __pycache__/
 *.pyc
 
-# Stream 1 local training artifacts -- regenerate via train.py, not meant to be committed
+# Stream 1 local training artifacts 
+# regenerate via train.py, not meant to be committed
 stream1_simulation/checkpoints/
 stream1_simulation/tb_logs/
 wandb/
