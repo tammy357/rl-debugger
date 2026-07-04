@@ -102,14 +102,36 @@ endpoint** (`base_url` from env `GEMMA_BASE_URL`, default
 - System prompt: role ("RL policy debugging assistant"), the failure-agnostic
   cross-check instruction, the exact output JSON schema with one example, and
   thinking mode enabled via `<|think|>` (per build plan).
-- User message, in order: (1) telemetry block as compact text ("only cite
-  numbers from here"), (2) prior hypothesis log, (3) reward chart image,
+- **Equal-weight evidence rule** (in the system prompt): the two sources have
+  distinct authority — telemetry is authoritative for *what the numbers are*
+  (never re-derive them from the chart), the frames are authoritative for
+  *what physically happened* — and **neither outranks the other on *why***.
+  A disagreement between them is a finding to report, not noise to smooth
+  over; never discard a visual observation because the logs don't mention it,
+  and never dismiss a logged fact because the video "looks fine".
+- **Staged analysis protocol** (in the ask), designed to prevent anchoring on
+  either source:
+  1. *Video-only account* — describe the policy's behavior across the frames,
+     before consulting any numbers.
+  2. *Telemetry + chart account* — summarize what the numbers and curve say,
+     on their own terms.
+  3. *Reconcile* — list explicit agreements and contradictions between the
+     two accounts. Contradictions (e.g. reward climbing while the task
+     visibly fails) are the primary evidence of reward misspecification.
+  4. *Update hypotheses* — confirmed / ruled_out / next_to_check (must lie
+     inside the manifest's `step_range`) / proposed reward edit.
+- **Dual citation**: each confirmed/ruled_out item should cite both frame
+  number(s) and the telemetry or chart fact supporting it; a claim supported
+  by only one source is allowed but must be labeled single-source (candidate
+  for `next_to_check` rather than `confirmed`). This both proves the model
+  actually used each input and gives Stream 4's UI checkable provenance.
+- User message, in order: (1) telemetry block as compact text — all manifest
+  fields, unfiltered, (2) prior hypothesis log, (3) reward chart image,
   (4) frames interleaved with `frame N = sim step S` labels from the manifest
-  (plain `frame N` labels when no manifest is given),
-  (5) the ask: describe observed behavior → cross-check against telemetry →
-  update confirmed/ruled_out → pick `next_to_check` (must lie inside the
-  manifest's `step_range`) → propose a reward edit. Every claim must cite the
-  supporting frame numbers — proves the model actually looked.
+  (plain `frame N` labels when no manifest is given), (5) the staged ask
+  above. Frames-before-numbers ordering inside the ask (stage 1 before
+  stage 2) counters the tendency to anchor on whichever evidence was read
+  first.
 
 ### Output handling
 
@@ -134,8 +156,9 @@ knobs if slow.
 ## Testing
 
 - **Unit (no model):** `schema.py` accept/reject cases incl. JSON embedded in
-  prose and thinking blocks; `prompts.py` message structure (telemetry present,
-  frames labeled, no bug-specific words like "drop" in the system prompt);
+  prose and thinking blocks; `prompts.py` message structure (telemetry present
+  and unfiltered, frames labeled, staged-protocol + dual-citation instructions
+  present, no bug-specific words like "drop" in the system prompt);
   `images.py` encoding.
 - **Contract:** `analyze_run` with `mock_client` against the real
   `stream1_simulation/outputs/run1..3` fixtures — verifies we consume exactly
