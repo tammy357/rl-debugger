@@ -74,6 +74,20 @@ def test_http_error_maps_to_kind_backend(monkeypatch):
     assert exc.value.kind == "backend"
 
 
+def test_thinking_only_response_raises_actionable_backend_error(monkeypatch):
+    # Live-failure regression (2026-07-04): Gemma 4 thinking is ON by default at
+    # the template level; ALL tokens go to reasoning_content, content stays
+    # empty, and analyze_run dies with an unhelpful bad_json two calls later.
+    client = GemmaClient(base_url="http://x/v1", model="m")
+    payload = {"choices": [{"message": {"content": "", "reasoning_content": "hmm " * 500}}],
+               "usage": {"completion_tokens": 1200}}
+    monkeypatch.setattr(requests, "post", lambda *a, **k: FakeResp(payload=payload))
+    with pytest.raises(AnalyzeRunError) as exc:
+        client.chat(MSGS)
+    assert exc.value.kind == "backend"
+    assert "--reasoning-budget 0" in str(exc.value)  # actionable message
+
+
 def test_env_defaults(monkeypatch):
     monkeypatch.setenv("GEMMA_BASE_URL", "http://env-host:9999/v1")
     monkeypatch.setenv("GEMMA_MODEL", "env-model")

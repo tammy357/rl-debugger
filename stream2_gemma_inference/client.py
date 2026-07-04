@@ -40,4 +40,17 @@ class GemmaClient:
             raise AnalyzeRunError("backend", f"Gemma server returned HTTP {resp.status_code}")
         data = resp.json()
         self.last_usage = data.get("usage")
-        return data["choices"][0]["message"].get("content") or ""
+        message = data["choices"][0]["message"]
+        content = message.get("content") or ""
+        if not content and message.get("reasoning_content"):
+            # Live failure seen 2026-07-04: Gemma 4's chat template enables
+            # thinking by default; the whole max_tokens budget goes to
+            # reasoning_content and content stays empty. Fail loud + actionable
+            # instead of letting extract_json report a misleading bad_json.
+            raise AnalyzeRunError(
+                "backend",
+                "model spent its entire token budget on thinking and returned no "
+                "answer — launch llama-server with --reasoning-budget 0 to "
+                "disable thinking mode",
+            )
+        return content
