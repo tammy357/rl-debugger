@@ -51,7 +51,7 @@ can't send proprietary training data off-device.
 
 ## 🎥 Demo
 
-> **[▶ Watch the 1-minute demo](#)** — replace with your video link before submitting
+> **[▶ Watch the 1-minute demo](https://www.youtube.com/watch?v=JaAhT42T1LQ)**
 
 Walkthrough: a buggy rollout → Gemma reasoning about the rollout + reward
 curve + logs together → the hypothesis log evolving as it's tested across
