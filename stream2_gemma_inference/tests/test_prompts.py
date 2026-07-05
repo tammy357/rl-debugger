@@ -85,3 +85,10 @@ def test_repair_messages_are_text_only():
     joined = "\n".join(m["content"] for m in msgs)
     assert "missing required key: ruled_out" in joined and "prior blob" in joined
     assert "```json" in joined  # demands fenced corrected output
+
+
+def test_stage3_checks_outcome_fields_against_frames():
+    # run96 lesson: a lying success flag must be treated as a finding, not
+    # trusted. Stage 3 must explicitly demand the outcome-vs-frames check.
+    assert "outcome fields" in ASK_TEMPLATE
+    assert "contradict" in ASK_TEMPLATE.lower()

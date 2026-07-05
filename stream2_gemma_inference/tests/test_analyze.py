@@ -104,3 +104,26 @@ def test_three_run_chain_carries_state_forward():
                                     if p["type"] == "text")
             assert prior_claim in prompt_text
     assert prior_claim in log["confirmed"]  # cumulative, not delta
+
+
+def test_no_event_hint_defaults_to_all_frames(run1):
+    # run96 lesson: without drop_step there is nothing to pin, and an 8-frame
+    # uniform subsample can silently discard the evidence frame. No hint ->
+    # send everything (capped at 15).
+    frames, chart, manifest = run1
+    no_hint = {k: v for k, v in manifest.items() if k != "drop_step"}
+    mock = MockClient([as_response(model_json())])
+    analyze_run(frames, chart, bootstrap_log(1), no_hint, client=mock)
+    user = mock.calls[0]["messages"][1]
+    images = [p for p in user["content"] if p["type"] == "image_url"]
+    assert len(images) == 16  # chart + ALL 15 frames
+
+
+def test_no_hint_still_respects_explicit_budget(run1):
+    frames, chart, manifest = run1
+    no_hint = {k: v for k, v in manifest.items() if k != "drop_step"}
+    mock = MockClient([as_response(model_json())])
+    analyze_run(frames, chart, bootstrap_log(1), no_hint, client=mock, n_frames=6)
+    user = mock.calls[0]["messages"][1]
+    images = [p for p in user["content"] if p["type"] == "image_url"]
+    assert len(images) == 7  # chart + 6: explicit caller choice wins

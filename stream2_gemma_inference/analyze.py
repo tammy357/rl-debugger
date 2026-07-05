@@ -12,12 +12,23 @@ from .prompts import build_messages, build_repair_messages
 from .schema import extract_json, validate
 
 DEFAULT_N_FRAMES = 8
+MAX_FRAMES_NO_HINT = 15
 
 
 def _resolve(value, env_key, default, cast):
     if value is not None:
         return value
     return cast(os.environ.get(env_key, default))
+
+
+def _default_n_frames(frames, manifest):
+    """Without an event-step hint in the manifest there is nothing to pin, so
+    an 8-frame uniform subsample can silently discard the one evidence-bearing
+    frame (seen live: a mislabeled-success run whose failure frame was
+    subsampled away). No hint -> send everything, capped."""
+    if manifest and "drop_step" in manifest:
+        return DEFAULT_N_FRAMES
+    return min(len(frames), MAX_FRAMES_NO_HINT)
 
 
 def _frame_items(frames, manifest, n_frames, contact_sheet):
@@ -45,7 +56,7 @@ def analyze_run(frames, chart, hypothesis_log, manifest=None, *,
     """Analyze one training run's evidence; return the updated hypothesis entry
     (root README data-contract shape, cumulative state — persist verbatim)."""
     client = client or GemmaClient()
-    n_frames = _resolve(n_frames, "GEMMA_N_FRAMES", DEFAULT_N_FRAMES, int)
+    n_frames = _resolve(n_frames, "GEMMA_N_FRAMES", _default_n_frames(frames, manifest), int)
     contact_sheet = _resolve(contact_sheet, "GEMMA_CONTACT_SHEET", "0",
                              lambda v: str(v) not in ("0", "false", "False", ""))
 

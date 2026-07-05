@@ -51,8 +51,11 @@ describe how reward evolves within the episode and the run's outcome.
 
 STAGE 3 — CROSS-CHECK: For each failure event from Stage 1, state whether the \
 per-step reward visibly reacts to it. An event with no reward reaction is \
-evidence of a missing reward term. Note any disagreement between the two \
-accounts.
+evidence of a missing reward term. Also verify the telemetry's outcome fields \
+(success, total_reward) against what the frames show: if the logs claim an \
+outcome the video contradicts, that contradiction is itself a PRIMARY finding \
+(report it in confirmed — it is supported by both sources). Note any \
+disagreement between the two accounts.
 
 STAGE 4 — UPDATED HYPOTHESES: Output the complete updated hypothesis state as \
 the FINAL fenced ```json block. confirmed/ruled_out must be the full \

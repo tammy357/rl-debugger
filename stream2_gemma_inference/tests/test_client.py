@@ -102,3 +102,16 @@ def test_mock_client_replays_and_records():
     assert mock.chat(MSGS, temperature=0) == "two"
     assert mock.calls[1]["temperature"] == 0
     assert mock.calls[0]["messages"] == MSGS
+
+
+def test_max_tokens_env_override(monkeypatch):
+    # Deep-analysis mode needs a bigger completion budget without code edits.
+    monkeypatch.setenv("GEMMA_MAX_TOKENS", "2048")
+    client = GemmaClient(base_url="http://x/v1", model="m")
+    captured = {}
+    monkeypatch.setattr(
+        requests, "post",
+        lambda url, json=None, timeout=None: captured.update(body=json) or FakeResp(payload=_payload()),
+    )
+    client.chat(MSGS)
+    assert captured["body"]["max_tokens"] == 2048
